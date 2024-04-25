@@ -9,6 +9,9 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class QPushButton;
+class CircleProgress;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,5 +22,12 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+    QPushButton* m_add10btn;
+    QPushButton* m_add50btn;
+    QPushButton* m_sub10btn;
+    QPushButton* m_sub50btn;
+
+    CircleProgress* m_dash;
 };
 #endif // MAINWINDOW_H

@@ -19,17 +19,21 @@ set(PROJECT_SOURCES
 # 添加头文件目录
 include_directories(
     ${PROJECT_SOURCE_DIR}/windows
+    ${PROJECT_SOURCE_DIR}/customControl
 )
 
 # 添加子目录
-add_subdirectory(
-    windows
-)
+add_subdirectory(windows)
+add_subdirectory(customControl)
+
+# 添加资源文件
+qt_add_resources(RES res.qrc)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(IOT_QT
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        ${RES}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET IOT_QT APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -45,6 +49,7 @@ else()
     else()
         add_executable(IOT_QT
             ${PROJECT_SOURCES}
+            ${RES}
         )
     endif()
 endif()
@@ -52,6 +57,7 @@ endif()
 target_link_libraries(IOT_QT PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     # 自定义动态库
     windows
+    customControl
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
