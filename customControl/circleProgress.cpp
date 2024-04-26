@@ -23,7 +23,7 @@ CircleProgress::CircleProgress(QWidget *parent)
     m_animation->setDuration(1000);
 
     // 数值改变触发绘制函数
-    connect(m_animation, &QPropertyAnimation::valueChanged, [&](const QVariant& value){
+    connect(m_animation, &QPropertyAnimation::valueChanged, this, [&](const QVariant& value){
         m_currProgress = value.toInt();
         if (m_currProgress < 0) m_currProgress = 0;
         if (m_currProgress > 360) m_currProgress = 360;
@@ -33,10 +33,14 @@ CircleProgress::CircleProgress(QWidget *parent)
 
 void CircleProgress::setValue(int value)
 {
+    // 越界
     if (value > 100) value = 100;
     if (value < 0) value = 0;
+
     m_value = value;
+    // 中止当前动画
     m_animation->stop();
+    // 开始新的动画
     m_animation->setStartValue(m_currProgress);
     m_animation->setEndValue((int)(value*3.6));
     m_animation->start();
@@ -50,6 +54,7 @@ void CircleProgress::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
 
+    // 绘制各个部分
     paintGray(painter);
     paintProgress(painter);
     paintText(painter);
@@ -58,13 +63,14 @@ void CircleProgress::paintEvent(QPaintEvent *event)
 void CircleProgress::paintGray(QPainter &painter)
 {
     painter.save();
-    QPainterPath outPath;
-    QPainterPath inPath;
+    QPainterPath outPath; // 外圆路径
+    QPainterPath inPath; // 内圆路径
 
     outPath.addEllipse(rect().center(), m_outR, m_outR);
     inPath.addEllipse(rect().center(), m_inR, m_inR);
 
     painter.setBrush(Qt::gray);
+    // 大圆减去小圆实现扇形
     painter.drawPath(outPath.subtracted(inPath));
     painter.restore();
 }
@@ -72,8 +78,8 @@ void CircleProgress::paintGray(QPainter &painter)
 void CircleProgress::paintProgress(QPainter &painter)
 {
     painter.save();
-    QPainterPath outPath(rect().center());
-    QPainterPath inPath;
+    QPainterPath outPath(rect().center()); // 外圆路径
+    QPainterPath inPath; // 内圆路径
 
     outPath.arcTo(rect(), 270, -m_currProgress);
     outPath.closeSubpath();
@@ -83,7 +89,6 @@ void CircleProgress::paintProgress(QPainter &painter)
     Conical.setColorAt(0.2,QColor(255,88,127,200));//红色
     Conical.setColorAt(0.8,QColor(53,179,251,150));//蓝色
     painter.setBrush(Conical);
-    // painter.setBrush(Qt::blue);
 
     painter.drawPath(outPath.subtracted(inPath));
     painter.restore();
@@ -93,7 +98,7 @@ void CircleProgress::paintText(QPainter &painter)
 {
     painter.save();
     painter.setPen(Qt::blue);
-    painter.setFont(QFont("华文彩云", 30));
-    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, QString::number((int)(m_currProgress/3.6)));
+    painter.setFont(QFont("华文彩云", 20));
+    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, "湿度：" + QString::number((int)(m_currProgress/3.6)));
     painter.restore();
 }
