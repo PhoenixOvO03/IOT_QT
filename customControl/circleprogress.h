@@ -11,6 +11,7 @@ class CircleProgress : public QWidget
     Q_OBJECT
 public:
     explicit CircleProgress(QWidget *parent = nullptr);
+    explicit CircleProgress(QString name, int minValue, int maxValue, QWidget *parent = nullptr);
 
     void setValue(int value);
     inline int value(){return m_value;}
@@ -30,6 +31,9 @@ private:
     int m_currProgress; // 当前动画值
     int m_outR; // 外圆半径
     int m_inR; // 内圆半径
+    int m_minValue; // 最小值
+    int m_maxValue; // 最大值
+    QString m_name; // 中心文字
 
     QPropertyAnimation* m_animation;    // 动画
 };

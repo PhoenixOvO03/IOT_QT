@@ -9,40 +9,52 @@ CircleProgress::CircleProgress(QWidget *parent)
     // this->resize(200,200);
     this->setFixedSize(200, 200);
 
-    // 初始化半径和初始值
+    // 初始化值
     m_outR = 100;
     m_inR = 75;
     m_value = 0;
     m_currProgress = 0;
+    m_minValue = 0;
+    m_maxValue = 100;
+    m_name = "湿度";
 
     // 动画的初始化
     m_animation = new QPropertyAnimation(this);
     m_animation->setTargetObject(this);
-    m_animation->setEasingCurve(QEasingCurve::OutElastic);
+    m_animation->setEasingCurve(QEasingCurve::OutCubic);
     m_animation->setDirection(QVariantAnimation::Forward);
     m_animation->setDuration(1000);
 
     // 数值改变触发绘制函数
     connect(m_animation, &QPropertyAnimation::valueChanged, this, [&](const QVariant& value){
         m_currProgress = value.toInt();
-        if (m_currProgress < 0) m_currProgress = 0;
-        if (m_currProgress > 360) m_currProgress = 360;
+        // 越界
+        if (m_currProgress < m_minValue) m_currProgress = m_minValue;
+        if (m_currProgress > m_maxValue) m_currProgress = m_maxValue;
         update();
     });
+}
+
+CircleProgress::CircleProgress(QString name, int minValue, int maxValue, QWidget *parent)
+    : CircleProgress(parent)
+{
+    m_name = name;
+    m_minValue = minValue;
+    m_maxValue = maxValue;
 }
 
 void CircleProgress::setValue(int value)
 {
     // 越界
-    if (value > 100) value = 100;
-    if (value < 0) value = 0;
+    if (value < m_minValue) value = m_minValue;
+    if (value > m_maxValue) value = m_maxValue;
 
     m_value = value;
     // 中止当前动画
     m_animation->stop();
     // 开始新的动画
     m_animation->setStartValue(m_currProgress);
-    m_animation->setEndValue((int)(value*3.6));
+    m_animation->setEndValue(value);
     m_animation->start();
 }
 
@@ -81,7 +93,7 @@ void CircleProgress::paintProgress(QPainter &painter)
     QPainterPath outPath(rect().center()); // 外圆路径
     QPainterPath inPath; // 内圆路径
 
-    outPath.arcTo(rect(), 270, -m_currProgress);
+    outPath.arcTo(rect(), 270,  -360.0 * (m_currProgress - m_minValue) / (m_maxValue - m_minValue));
     outPath.closeSubpath();
     inPath.addEllipse(rect().center(), m_inR, m_inR);
 
@@ -99,6 +111,6 @@ void CircleProgress::paintText(QPainter &painter)
     painter.save();
     painter.setPen(Qt::blue);
     painter.setFont(QFont("华文彩云", 20));
-    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, "湿度：" + QString::number((int)(m_currProgress/3.6)));
+    painter.drawText(0, 0, width(), height(), Qt::AlignCenter, QString("%1：%2").arg(m_name).arg(m_currProgress));
     painter.restore();
 }
