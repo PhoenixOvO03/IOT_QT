@@ -12,6 +12,7 @@ QT_END_NAMESPACE
 // 自定义
 class CircleProgress;
 class MySwitchButton;
+class WeatherInfo;
 // Qt
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -25,11 +26,8 @@ public:
     ~MainWindow();
 
 private:
-    void networkInit(); // 网络通信初始化
+    void membersInit(); // 成员初始化
     void layoutInit(); // 布局初始化
-    void circleProgressInit(); // 进度条初始化
-    void btnsInit(); // 按钮初始化
-    void timerInit(); // 定时器初始化
 
 private slots:
     void httpGet();
@@ -43,9 +41,11 @@ private:
     CircleProgress* m_humiProgress; // 湿度进度条
     CircleProgress* m_tempProgress; // 温度进度条
 
-    MySwitchButton* m_btn1;
-    MySwitchButton* m_btn2;
-    MySwitchButton* m_btn3;
+    WeatherInfo* m_weather; // 天气面板
+
+    MySwitchButton* m_bluetoothBtn; // 蓝牙按钮
+    MySwitchButton* m_wifiBtn; // wifi按钮
+    MySwitchButton* m_lightBtn; // 光照按钮
     MySwitchButton* m_btn4;
 
     QNetworkAccessManager* m_getManager; // get请求柄

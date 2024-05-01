@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>assets/IOT.png</file>
+        <file>assets/wifi.png</file>
+        <file>assets/Bluetooth.png</file>
+        <file>assets/light.png</file>
+        <file>assets/null.png</file>
     </qresource>
 </RCC>

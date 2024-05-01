@@ -2,7 +2,6 @@
 #define CIRCLEPROGRESS_H
 
 #include <QWidget>
-#include <QPropertyAnimation>
 
 class QPropertyAnimation;
 
@@ -16,10 +15,10 @@ public:
     void setValue(int value);
     inline int value(){return m_value;}
 
+signals:
+
 protected:
     void paintEvent(QPaintEvent *event);
-
-signals:
 
 private:
     void paintGray(QPainter& painter); // 绘制灰色底槽

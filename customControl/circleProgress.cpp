@@ -2,15 +2,16 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QPropertyAnimation>
 
 CircleProgress::CircleProgress(QWidget *parent)
     : QWidget{parent}
 {
     // this->resize(200,200);
-    this->setFixedSize(200, 200);
+    this->setFixedSize(199, 199);
 
     // 初始化值
-    m_outR = 100;
+    m_outR = 99;
     m_inR = 75;
     m_value = 0;
     m_currProgress = 0;

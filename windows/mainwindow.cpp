@@ -3,6 +3,7 @@
 
 #include "circleprogress.h"
 #include "myswitchbutton.h"
+#include "weatherinfo.h"
 
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -20,18 +21,19 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->resize(400,400);
+    this->resize(800, 600);
+    this->setWindowTitle("IOT"); // 设置标题
+    this->setWindowIcon(QIcon(":/assets/IOT.png")); // 设置图标
 
-    // 设置标题
-    this->setWindowTitle("IOT");
-    // 设置图标
-    this->setWindowIcon(QIcon(":/assets/IOT.png"));
-
-    networkInit(); // 网络通信初始化
-    circleProgressInit(); // 进度条初始化
-    btnsInit(); // 按钮组初始化
+    membersInit(); // 成员初始化
     layoutInit(); // 布局初始化
-    timerInit(); // 定时器初始化
+
+    QList<QPointF> points;
+    points << QPoint(0, 10) << QPoint(1, 8) << QPoint(2, 12) << QPoint(3, 10) << QPoint(4, 5)
+           << QPoint(5, 10) << QPoint(6, 8) << QPoint(7, 12) << QPoint(8, 10) << QPoint(9, 5);
+    m_weather->setPoints(points);
+
+    m_timer->start(3000);
 }
 
 MainWindow::~MainWindow()
@@ -39,82 +41,77 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::networkInit()
+void MainWindow::membersInit()
 {
-    // get
+    // 圆形进度条
+    m_humiProgress = new CircleProgress("湿度", 0, 100);
+    m_tempProgress = new CircleProgress("温度", -20, 50);
+
+    // 天气信息
+    m_weather = new WeatherInfo();
+
+    // 按钮组
+    m_bluetoothBtn = new MySwitchButton(MySwitchButton::BlueTooth);
+    m_wifiBtn = new MySwitchButton(MySwitchButton::WiFi);
+    m_lightBtn = new MySwitchButton(MySwitchButton::Light);
+    m_btn4 = new MySwitchButton();
+    connect(m_bluetoothBtn, &MySwitchButton::toggled, this, [&](bool check){
+        QString sendMsg = QString("蓝牙：%1").arg(check ? "打开":"关闭");
+        httpPost(sendMsg);
+    });
+    connect(m_wifiBtn, &MySwitchButton::toggled, this, [&](bool check){
+        QString sendMsg = QString("wifi：%1").arg(check ? "打开":"关闭");
+        httpPost(sendMsg);
+    });
+    connect(m_lightBtn, &MySwitchButton::toggled, this, [&](bool check){
+        QString sendMsg = QString("光照：%1").arg(check ? "打开":"关闭");
+        httpPost(sendMsg);
+    });
+    connect(m_btn4, &MySwitchButton::toggled, this, [&](bool check){
+        QString sendMsg = QString("按钮4：%1").arg(check ? "打开":"关闭");
+        httpPost(sendMsg);
+    });
+
+    // get post
     m_getManager = new QNetworkAccessManager();
     connect(m_getManager, &QNetworkAccessManager::finished, this, &MainWindow::httpGetFinished);
-
-    // post
     m_postManager = new QNetworkAccessManager();
     connect(m_postManager, &QNetworkAccessManager::finished, this, &MainWindow::httpPostFinished);
+
+    // 定时更新数据
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &MainWindow::httpGet);
 }
 
 void MainWindow::layoutInit()
 {
     // 进度条
-    QVBoxLayout* vBox1 = new QVBoxLayout();
-    vBox1->addWidget(m_humiProgress);
-    vBox1->addWidget(m_tempProgress);
+    QHBoxLayout* progressBox = new QHBoxLayout();
+    progressBox->addWidget(m_humiProgress);
+    progressBox->addSpacing(30);
+    progressBox->addWidget(m_tempProgress);
+
+    // 信息
+    QVBoxLayout* infoBox = new QVBoxLayout();
+    infoBox->addLayout(progressBox);
+    infoBox->addWidget(m_weather);
 
     // 按钮群
-    QVBoxLayout* vBox2 = new QVBoxLayout();
-    vBox2->addWidget(new QLabel("按钮1"));
-    vBox2->addWidget(m_btn1);
-    vBox2->addWidget(new QLabel("按钮2"));
-    vBox2->addWidget(m_btn2);
-    vBox2->addWidget(new QLabel("按钮3"));
-    vBox2->addWidget(m_btn3);
-    vBox2->addWidget(new QLabel("按钮4"));
-    vBox2->addWidget(m_btn4);
+    QVBoxLayout* btnsBox = new QVBoxLayout();
+    btnsBox->addWidget(new QLabel("蓝牙"));
+    btnsBox->addWidget(m_bluetoothBtn);
+    btnsBox->addWidget(new QLabel("wifi"));
+    btnsBox->addWidget(m_wifiBtn);
+    btnsBox->addWidget(new QLabel("光照"));
+    btnsBox->addWidget(m_lightBtn);
+    btnsBox->addWidget(new QLabel("null"));
+    btnsBox->addWidget(m_btn4);
 
     // 总体
     QHBoxLayout* hBox = new QHBoxLayout();
-    hBox->addLayout(vBox1);
-    hBox->addLayout(vBox2);
+    hBox->addLayout(infoBox);
+    hBox->addLayout(btnsBox);
     ui->centralwidget->setLayout(hBox);
-}
-
-void MainWindow::circleProgressInit()
-{
-    m_humiProgress = new CircleProgress("湿度", 0, 100);
-    m_tempProgress = new CircleProgress("温度", -20, 50);
-}
-
-void MainWindow::btnsInit()
-{
-    m_btn1 = new MySwitchButton();
-    m_btn2 = new MySwitchButton();
-    m_btn3 = new MySwitchButton();
-    m_btn4 = new MySwitchButton();
-
-    connect(m_btn1, &MySwitchButton::toggled, this, [&](bool check){
-        QString sendMsg = QString("按钮1：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
-    });
-
-    connect(m_btn2, &MySwitchButton::toggled, this, [&](bool check){
-        QString sendMsg = QString("按钮2：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
-    });
-
-    connect(m_btn3, &MySwitchButton::toggled, this, [&](bool check){
-        QString sendMsg = QString("按钮3：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
-    });
-
-    connect(m_btn4, &MySwitchButton::toggled, this, [&](bool check){
-        QString sendMsg = QString("按钮4：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
-    });
-}
-
-void MainWindow::timerInit()
-{
-    // 定时更新数据
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &MainWindow::httpGet);
-    m_timer->start(3000);
 }
 
 void MainWindow::httpGet()
