@@ -9,12 +9,13 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDebug>
-#include <QLabel>
+// #include <QLabel>
 #include <QTimer>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,11 +28,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     membersInit(); // 成员初始化
     layoutInit(); // 布局初始化
-
-    QList<QPointF> points;
-    points << QPoint(0, 10) << QPoint(1, 8) << QPoint(2, 12) << QPoint(3, 10) << QPoint(4, 5)
-           << QPoint(5, 10) << QPoint(6, 8) << QPoint(7, 12) << QPoint(8, 10) << QPoint(9, 5);
-    m_weather->setPoints(points);
 
     m_timer->start(3000);
 }
@@ -57,30 +53,32 @@ void MainWindow::membersInit()
     m_btn4 = new MySwitchButton();
     connect(m_bluetoothBtn, &MySwitchButton::toggled, this, [&](bool check){
         QString sendMsg = QString("蓝牙：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
+        httpPostString(sendMsg);
     });
     connect(m_wifiBtn, &MySwitchButton::toggled, this, [&](bool check){
         QString sendMsg = QString("wifi：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
+        httpPostString(sendMsg);
     });
     connect(m_lightBtn, &MySwitchButton::toggled, this, [&](bool check){
         QString sendMsg = QString("光照：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
+        httpPostString(sendMsg);
     });
     connect(m_btn4, &MySwitchButton::toggled, this, [&](bool check){
         QString sendMsg = QString("按钮4：%1").arg(check ? "打开":"关闭");
-        httpPost(sendMsg);
+        httpPostString(sendMsg);
     });
 
-    // get post
-    m_getManager = new QNetworkAccessManager();
-    connect(m_getManager, &QNetworkAccessManager::finished, this, &MainWindow::httpGetFinished);
-    m_postManager = new QNetworkAccessManager();
-    connect(m_postManager, &QNetworkAccessManager::finished, this, &MainWindow::httpPostFinished);
+    m_getTempHumiManager = new QNetworkAccessManager(); // get温湿度请求柄
+    connect(m_getTempHumiManager, &QNetworkAccessManager::finished, this, &MainWindow::getTempHumiFinished);
+    m_getTempArrayManager = new QNetworkAccessManager(); // get温度数组
+    connect(m_getTempArrayManager, &QNetworkAccessManager::finished, this, &MainWindow::getTempArrayFinished);
+    m_postStringManager = new QNetworkAccessManager(); // post字符串请求柄
+    connect(m_postStringManager, &QNetworkAccessManager::finished, this, &MainWindow::httpPostStringFinished);
 
     // 定时更新数据
     m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &MainWindow::httpGet);
+    connect(m_timer, &QTimer::timeout, this, &MainWindow::getTempHumi);
+    connect(m_timer, &QTimer::timeout, this, &MainWindow::getTempArray);
 }
 
 void MainWindow::layoutInit()
@@ -98,13 +96,13 @@ void MainWindow::layoutInit()
 
     // 按钮群
     QVBoxLayout* btnsBox = new QVBoxLayout();
-    btnsBox->addWidget(new QLabel("蓝牙"));
+    // btnsBox->addWidget(new QLabel("蓝牙"));
     btnsBox->addWidget(m_bluetoothBtn);
-    btnsBox->addWidget(new QLabel("wifi"));
+    // btnsBox->addWidget(new QLabel("wifi"));
     btnsBox->addWidget(m_wifiBtn);
-    btnsBox->addWidget(new QLabel("光照"));
+    // btnsBox->addWidget(new QLabel("光照"));
     btnsBox->addWidget(m_lightBtn);
-    btnsBox->addWidget(new QLabel("null"));
+    // btnsBox->addWidget(new QLabel("null"));
     btnsBox->addWidget(m_btn4);
 
     // 总体
@@ -114,20 +112,20 @@ void MainWindow::layoutInit()
     ui->centralwidget->setLayout(hBox);
 }
 
-void MainWindow::httpGet()
+void MainWindow::getTempHumi()
 {
     QNetworkRequest quest;
     quest.setUrl(QUrl("http://127.0.0.1:12345/api/data"));
-    m_getManager->get(quest);
+    m_getTempHumiManager->get(quest);
 }
 
-void MainWindow::httpGetFinished(QNetworkReply *reply)
+void MainWindow::getTempHumiFinished(QNetworkReply *reply)
 {
     QString allinfo = reply->readAll();
     if (allinfo.isEmpty()) return;
     qDebug() << allinfo;
 
-    QJsonDocument json_recv = QJsonDocument::fromJson(allinfo.toUtf8());//解析json对象
+    QJsonDocument json_recv = QJsonDocument::fromJson(allinfo.toUtf8()); // 解析json对象
     QJsonObject object = json_recv.object();
     int humi = object.value("humi").toInt();
     int temp = object.value("temp").toInt();
@@ -136,20 +134,46 @@ void MainWindow::httpGetFinished(QNetworkReply *reply)
     m_tempProgress->setValue(temp);
     qDebug() << humi << " " << temp;
 
+    reply->deleteLater(); // 销毁请求对象
+}
+
+void MainWindow::getTempArray()
+{
+    QNetworkRequest quest;
+    quest.setUrl(QUrl("http://127.0.0.1:12345/api/temp"));
+    m_getTempArrayManager->get(quest);
+}
+
+void MainWindow::getTempArrayFinished(QNetworkReply *reply)
+{
+    QString allinfo = reply->readAll();
+    if (allinfo.isEmpty()) return;
+    qDebug() << allinfo;
+
+    QJsonDocument json_recv = QJsonDocument::fromJson(allinfo.toUtf8()); // 解析
+    QJsonArray array = json_recv.array();
+    QList<QPointF> points;
+    for (int i = 0; i < array.size(); ++i)
+    {
+        points << QPointF(i, array[i].toInt());
+    }
+    m_weather->setPoints(points);
+
     reply->deleteLater(); //销毁请求对象
 }
 
-void MainWindow::httpPost(QString data)
+void MainWindow::httpPostString(QString data)
 {
     QNetworkRequest request;
     request.setHeader(QNetworkRequest::ContentTypeHeader,QVariant("text/plain"));
     request.setUrl(QUrl("http://127.0.0.1:12345/api/change"));
-    m_postManager->post(request, data.toUtf8());
+    m_postStringManager->post(request, data.toUtf8());
 }
 
-void MainWindow::httpPostFinished(QNetworkReply *reply)
+void MainWindow::httpPostStringFinished(QNetworkReply *reply)
 {
     QString bytes = reply->readAll();
+    if (bytes.isEmpty()) return;
     // 获取http状态码
     QVariant statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     if(statusCode.isValid())

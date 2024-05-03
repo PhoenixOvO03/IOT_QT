@@ -9,12 +9,18 @@ temp = 35
 @app.route('/api/data', methods=['GET'])
 def get_data():
     global humi,temp
-    humi = random.randint(0, 100)
-    temp = random.randint(-20, 50)
     data = {
         'humi': humi,
         'temp': temp,
     }
+    humi = random.randint(0, 100)
+    temp = random.randint(-20, 50)
+    return jsonify(data)
+
+@app.route('/api/temp', methods=['GET'])
+def get_temp():
+    global humi,temp
+    data = [1,2,5,8,10,9,0,-4]
     return jsonify(data)
 
 @app.route('/api/change', methods=['POST'])

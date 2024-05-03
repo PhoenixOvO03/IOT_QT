@@ -30,10 +30,12 @@ private:
     void layoutInit(); // 布局初始化
 
 private slots:
-    void httpGet();
-    void httpGetFinished(QNetworkReply *reply);
-    void httpPost(QString data);
-    void httpPostFinished(QNetworkReply *reply);
+    void getTempHumi(); // 获取温湿度
+    void getTempHumiFinished(QNetworkReply *reply);
+    void getTempArray(); // 获取温度数组
+    void getTempArrayFinished(QNetworkReply *reply);
+    void httpPostString(QString data); // 发送字符串
+    void httpPostStringFinished(QNetworkReply *reply);
 
 private:
     Ui::MainWindow *ui;
@@ -48,8 +50,9 @@ private:
     MySwitchButton* m_lightBtn; // 光照按钮
     MySwitchButton* m_btn4;
 
-    QNetworkAccessManager* m_getManager; // get请求柄
-    QNetworkAccessManager* m_postManager; // post请求柄
+    QNetworkAccessManager* m_getTempHumiManager; // get温湿度请求柄
+    QNetworkAccessManager* m_getTempArrayManager; // get温度数组
+    QNetworkAccessManager* m_postStringManager; // post字符串请求柄
     QTimer* m_timer; // 定时请求数据
 };
 #endif // MAINWINDOW_H

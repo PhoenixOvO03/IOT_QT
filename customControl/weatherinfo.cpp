@@ -9,8 +9,12 @@ WeatherInfo::WeatherInfo(QWidget *parent)
     : QWidget{parent}
 {
     this->setFixedSize(400, 200);
-
     membersInit();
+
+    QList<QPointF> points;
+    points << QPoint(0, 0) << QPoint(1, 1) << QPoint(2, 2) << QPoint(3, 3) << QPoint(4, 4)
+           << QPoint(5, 5) << QPoint(6, 6) << QPoint(7, 7) << QPoint(8, 8) << QPoint(9, 9);
+    setPoints(points);
 }
 
 void WeatherInfo::setPoints(QList<QPointF> &points)
