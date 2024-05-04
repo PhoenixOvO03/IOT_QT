@@ -9,7 +9,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDebug>
-// #include <QLabel>
+#include <QLabel>
 #include <QTimer>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -28,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     membersInit(); // 成员初始化
     layoutInit(); // 布局初始化
+
+    QLabel* label = new QLabel("哔哩哔哩up主：十_OvO自制", this);
+    label->resize(200,20);
 
     m_timer->start(3000);
 }
@@ -96,13 +99,9 @@ void MainWindow::layoutInit()
 
     // 按钮群
     QVBoxLayout* btnsBox = new QVBoxLayout();
-    // btnsBox->addWidget(new QLabel("蓝牙"));
     btnsBox->addWidget(m_bluetoothBtn);
-    // btnsBox->addWidget(new QLabel("wifi"));
     btnsBox->addWidget(m_wifiBtn);
-    // btnsBox->addWidget(new QLabel("光照"));
     btnsBox->addWidget(m_lightBtn);
-    // btnsBox->addWidget(new QLabel("null"));
     btnsBox->addWidget(m_btn4);
 
     // 总体
